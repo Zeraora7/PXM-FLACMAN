@@ -88,6 +88,14 @@ sealed class SortOption(
         direction = SortDirection.Ascending
     )
 
+    object SongDiscTrackOrder : SortOption(
+        storageKey = "song_disc_track",
+        displayName = "Disc + Track Number",
+        methodLabel = "Disc + Track",
+        methodKey = "song_disc_track",
+        direction = SortDirection.Ascending
+    )
+
     object AlbumTitleAZ : SortOption(
         storageKey = "album_title_az",
         displayName = "Title (A-Z)",
@@ -345,7 +353,8 @@ sealed class SortOption(
                 SongDateAdded,
                 SongDateAddedAsc,
                 SongDuration,
-                SongDurationAsc
+                SongDurationAsc,
+                SongDiscTrackOrder
             )
         }
 
