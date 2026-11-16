@@ -78,6 +78,27 @@ jobs:
             echo "keyPassword=$KEYSTORE_PASSWORD"
           } > keystore.properties
 
+      - name: Normalize baseline profile encoding
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          profiles = [
+              Path("app/src/release/generated/baselineProfiles/baseline-prof.txt"),
+              Path("app/src/release/generated/baselineProfiles/startup-prof.txt"),
+          ]
+
+          for profile in profiles:
+              if not profile.exists():
+                  continue
+              content = profile.read_bytes()
+              if content.startswith(b"\\xef\\xbb\\xbf"):
+                  profile.write_bytes(content[3:])
+                  print(f"Removed UTF-8 BOM: {profile}")
+              else:
+                  print(f"No leading BOM: {profile}")
+          PY
+
       - name: Build alpha release APKs
         run: >
           bash ./gradlew :app:assembleRelease
