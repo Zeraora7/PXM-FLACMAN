@@ -665,6 +665,14 @@ interface MusicDao {
             CASE WHEN :sortOrder = 'song_date_added_asc' THEN date_added END ASC,
             CASE WHEN :sortOrder = 'song_duration' THEN duration END DESC,
             CASE WHEN :sortOrder = 'song_duration_asc' THEN duration END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN COALESCE(disc_number, 0) > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND disc_number > 0
+                THEN disc_number END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN track_number > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND track_number > 0
+                THEN track_number END ASC,
             title COLLATE NOCASE ASC,
             id ASC
     """)
@@ -751,6 +759,14 @@ interface MusicDao {
             CASE WHEN :sortOrder = 'song_date_added_asc' THEN date_added END ASC,
             CASE WHEN :sortOrder = 'song_duration' THEN duration END DESC,
             CASE WHEN :sortOrder = 'song_duration_asc' THEN duration END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN COALESCE(disc_number, 0) > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND disc_number > 0
+                THEN disc_number END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN track_number > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND track_number > 0
+                THEN track_number END ASC,
 
             -- Secondary sort falls back to title for consistency (case-insensitive)
             title COLLATE NOCASE ASC,
@@ -796,6 +812,14 @@ interface MusicDao {
             CASE WHEN :sortOrder = 'song_date_added_asc' THEN date_added END ASC,
             CASE WHEN :sortOrder = 'song_duration' THEN duration END DESC,
             CASE WHEN :sortOrder = 'song_duration_asc' THEN duration END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN COALESCE(disc_number, 0) > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND disc_number > 0
+                THEN disc_number END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track'
+                THEN CASE WHEN track_number > 0 THEN 0 ELSE 1 END END ASC,
+            CASE WHEN :sortOrder = 'song_disc_track' AND track_number > 0
+                THEN track_number END ASC,
             title COLLATE NOCASE ASC,
             id ASC
         LIMIT :limit OFFSET :offset
