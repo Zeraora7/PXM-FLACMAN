@@ -1,5 +1,8 @@
 ﻿# Adds the "Sponsor" button to the repository page.
 # Replace the placeholder with your Ko-fi username (the part after ko-fi.com/).
+
+Please Support the Original PixelMusic Creator
+
 ko_fi: ianshulyadav
 custom:
   - "https://ianshulyadav.github.io/PixelMusic/#support"
