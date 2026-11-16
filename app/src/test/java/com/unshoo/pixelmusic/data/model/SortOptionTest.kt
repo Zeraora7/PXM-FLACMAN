@@ -52,4 +52,11 @@ class SortOptionTest {
 
         assertEquals(SortOption.SongArtist, resolved)
     }
+    @Test
+    fun `disc and track sorting is available for the song library`() {
+        assertEquals("song_disc_track", SortOption.SongDiscTrackOrder.storageKey)
+        assertEquals(SortDirection.Ascending, SortOption.SongDiscTrackOrder.direction)
+        assertEquals(true, SortOption.SONGS.contains(SortOption.SongDiscTrackOrder))
+    }
+
 }
