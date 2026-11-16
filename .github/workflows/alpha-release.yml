@@ -69,7 +69,7 @@ jobs:
             KEYSTORE_PASSWORD="$(openssl rand -hex 24)"
             keytool -genkey -v -keystore pixelplayeross-ci.jks -alias pixelplayeross-ci-key -keyalg RSA -keysize 4096 -validity 10000 \
               -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" \
-              -dname "CN=PixelPlayerOSS CI Throwaway, OU=Dev, O=PixelPlayerOSS, L=World, S=World, C=US"
+              -dname "CN=PixelPlayerOSS CI Throwaway, OU=Dev, O=PixelPlayerOSS, L=World, ST=World, C=US"
           fi
           {
             echo "storeFile=pixelplayeross-ci.jks"
@@ -80,7 +80,7 @@ jobs:
 
       - name: Build alpha release APKs
         run: >
-          ./gradlew :app:assembleRelease
+          bash ./gradlew :app:assembleRelease
           -Ppixelplayer.enableAbiSplits=true
           -PAPP_VERSION_NAME=${{ steps.version.outputs.name }}
           -PAPP_VERSION_CODE=${{ steps.version.outputs.code }}
