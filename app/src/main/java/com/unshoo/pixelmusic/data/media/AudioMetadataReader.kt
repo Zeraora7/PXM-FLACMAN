@@ -100,7 +100,7 @@ object AudioMetadataReader {
                 val metadata = TagLib.getMetadata(fd.dup().detachFd(), readPictures = false)
                 val propertyMap = metadata?.propertyMap ?: emptyMap()
 
-                Timber.tag(TAG).w("TagLib propertyMap keys for ${file.name}: ${propertyMap.keys}")
+                Timber.tag(TAG).d("TagLib propertyMap keys for ${file.name}: ${propertyMap.keys}")
 
                 val title = propertyMap["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
                 val artists = normalizeArtistMetadataValues(propertyMap["ARTIST"]?.asIterable())
@@ -144,7 +144,7 @@ object AudioMetadataReader {
                     emptyList()
                 }
 
-                Timber.tag(TAG).w("TagLib result for ${file.name}: title=$title, artist=$artist, album=$album, genre=$genre")
+                Timber.tag(TAG).d("TagLib result for ${file.name}: title=$title, artist=$artist, album=$album, genre=$genre")
 
                 val artwork = if (readArtwork) {
                     val pictures = TagLib.getPictures(fd.detachFd())
@@ -163,7 +163,7 @@ object AudioMetadataReader {
                 val fallback = if (
                     title == null || artist == null || (readArtwork && artwork == null) || readCustomMetadata
                 ) {
-                    Timber.tag(TAG).w("TagLib incomplete for ${file.name}, trying JAudioTagger fallback...")
+                    Timber.tag(TAG).d("TagLib incomplete for ${file.name}, trying JAudioTagger fallback...")
                     readWithJAudioTagger(file, readCustomMetadata = readCustomMetadata)
                 } else null
 
@@ -212,7 +212,7 @@ object AudioMetadataReader {
             val tag = audioFile.tag
             val header = audioFile.audioHeader
 
-            Timber.tag(TAG).w("JAudioTagger: tag class=${tag?.javaClass?.simpleName}, " +
+            Timber.tag(TAG).d("JAudioTagger: tag class=${tag?.javaClass?.simpleName}, " +
                     "header=${header?.format}, sampleRate=${header?.sampleRateAsNumber}")
 
             val title = tag?.getFirst(FieldKey.TITLE)?.takeIf { it.isNotBlank() }
@@ -264,7 +264,7 @@ object AudioMetadataReader {
                 }
             }
 
-            Timber.tag(TAG).w("JAudioTagger result for ${file.name}: title=$title, artist=$artist, " +
+            Timber.tag(TAG).d("JAudioTagger result for ${file.name}: title=$title, artist=$artist, " +
                     "album=$album, genre=$genre, artwork=${artwork != null}")
 
             AudioMetadata(
