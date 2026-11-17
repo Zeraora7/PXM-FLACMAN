@@ -32,4 +32,24 @@ class AudioMetaUtilsTest {
         assertEquals("ac3", AudioMetaUtils.mimeTypeToFormat("audio/ac3"))
         assertEquals("dts", AudioMetaUtils.mimeTypeToFormat("audio/vnd.dts"))
     }
+
+    @Test
+    fun completeTechnicalMetadataSkipsExtractorFallback() {
+        assertEquals(
+            false,
+            needsAudioMetadataExtractorFallback("audio/flac", 900_000, 96_000)
+        )
+    }
+
+    @Test
+    fun incompleteTechnicalMetadataUsesExtractorFallback() {
+        assertEquals(
+            true,
+            needsAudioMetadataExtractorFallback("audio/flac", null, 96_000)
+        )
+        assertEquals(
+            true,
+            needsAudioMetadataExtractorFallback(null, 900_000, 96_000)
+        )
+    }
 }
