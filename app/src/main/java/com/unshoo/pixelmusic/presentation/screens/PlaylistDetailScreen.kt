@@ -1072,24 +1072,7 @@ fun PlaylistDetailScreen(
                     }
                     showSongInfoBottomSheet = false
                 },
-                onEditSong = { newTitle, newArtist, newAlbum, newAlbumArtist, newComposer, newGenre, newLyrics, newTrackNumber, newDiscNumber, replayGainTrackGainDb, replayGainAlbumGainDb, coverArtUpdate, customMetadataChanges ->
-                    playerViewModel.editSongMetadata(
-                        currentSong,
-                        newTitle,
-                        newArtist,
-                        newAlbum,
-                        newAlbumArtist,
-                        newComposer,
-                        newGenre,
-                        newLyrics,
-                        newTrackNumber,
-                        newDiscNumber,
-                        replayGainTrackGainDb,
-                        replayGainAlbumGainDb,
-                        coverArtUpdate,
-                        customMetadataChanges
-                    )
-                },
+
                 removeFromListTrigger = {
                     playlistViewModel.removeSongFromPlaylist(playlistId, currentSong.id)
                 }
