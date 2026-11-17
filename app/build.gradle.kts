@@ -274,13 +274,6 @@ dependencies {
     implementation(libs.pinyin4j.core)
     implementation(libs.accompanist.drawablepainter)
     implementation(libs.accompanist.permissions)
-    implementation(libs.capturable) {
-        exclude(group = "androidx.compose.animation")
-        exclude(group = "androidx.compose.foundation")
-        exclude(group = "androidx.compose.material")
-        exclude(group = "androidx.compose.runtime")
-        exclude(group = "androidx.compose.ui")
-    }
 
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.params)
