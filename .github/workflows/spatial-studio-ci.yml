@@ -1,0 +1,55 @@
+name: Spatial Studio CI
+
+on:
+  push:
+    branches:
+      - flacman-0.4-crossfade-spatial-studio
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "assets/**"
+      - "fastlane/**"
+      - "metadata/**"
+      - "LICENSE"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "assets/**"
+      - "fastlane/**"
+      - "metadata/**"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-studio-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.2.0
+
+      - name: Run debug unit tests
+        run: bash ./gradlew :app:testDebugUnitTest
+
+      - name: Assemble debug APK
+        run: bash ./gradlew :app:assembleDebug
