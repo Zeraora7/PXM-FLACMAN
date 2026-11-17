@@ -111,26 +111,10 @@ fun SongInfoBottomSheet(
     onNavigateToArtist: () -> Unit,
     onNavigateToArtistById: (Long) -> Unit = { onNavigateToArtist() },
     onNavigateToGenre: () -> Unit,
-    onEditSong: (
-        title: String,
-        artist: String,
-        album: String,
-        albumArtist: String,
-        composer: String,
-        genre: String,
-        lyrics: String,
-        trackNumber: Int,
-        discNumber: Int?,
-        replayGainTrackGainDb: String,
-        replayGainAlbumGainDb: String,
-        coverArtUpdate: CoverArtUpdate?,
-        customMetadataChanges: CustomMetadataChanges
-    ) -> Unit,
     removeFromListTrigger: () -> Unit,
     songInfoViewModel: SongInfoBottomSheetViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    var showEditSheet by remember { mutableStateOf(false) }
     var showArtistPicker by remember { mutableStateOf(false) }
     var showTonePickerDialog by remember { mutableStateOf(false) }
     var toneConfirmationTarget by remember { mutableStateOf<ToneTarget?>(null) }
@@ -331,11 +315,7 @@ fun SongInfoBottomSheet(
     }
 
     ModalBottomSheet(
-        onDismissRequest = {
-            if (!showEditSheet) {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         CompositionLocalProvider(
@@ -378,25 +358,6 @@ fun SongInfoBottomSheet(
                                     fontWeight = FontWeight.Light,
                                     text = song.title
                                 )
-                            }
-                            val isEditable = remember(song) { songInfoViewModel.isSongEditable(song) }
-                            if (isEditable) {
-                                FilledTonalIconButton(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .padding(vertical = 6.dp),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceBright,
-                                        contentColor = MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    onClick = { showEditSheet = true },
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.padding(horizontal = 8.dp),
-                                        imageVector = Icons.Rounded.Edit,
-                                        contentDescription = stringResource(R.string.cd_edit_song_metadata)
-                                    )
-                                }
                             }
                         }
                     }
@@ -851,29 +812,6 @@ fun SongInfoBottomSheet(
         }
     }
 
-    EditSongSheet(
-        visible = showEditSheet,
-        song = song,
-        onDismiss = { showEditSheet = false },
-        onSave = { title, artist, album, albumArtist, composer, genre, lyrics, trackNumber, discNumber, replayGainTrackGainDb, replayGainAlbumGainDb, coverArt, customMetadataChanges ->
-            onEditSong(
-                title,
-                artist,
-                album,
-                albumArtist,
-                composer,
-                genre,
-                lyrics,
-                trackNumber,
-                discNumber,
-                replayGainTrackGainDb,
-                replayGainAlbumGainDb,
-                coverArt,
-                customMetadataChanges
-            )
-            showEditSheet = false
-        },
-    )
 
     when (val state = musicBrainzState) {
         SongInfoBottomSheetViewModel.MusicBrainzUiState.Idle,
