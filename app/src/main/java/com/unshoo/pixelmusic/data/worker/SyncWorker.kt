@@ -944,46 +944,37 @@ constructor(
         }
 
         val rawSongCount = rawDataList.size
-        val songsToProcess = if (forceProcessAll) {
-              rawDataList.toList()
-        } else {
-            val results = mutableListOf<RawSongData>()
-            
-            rawDataList.chunked(500).forEach { batch ->
-                val ids = batch.map { it.id }
-                val existingMap = musicDao.getSongsByIdsListSimple(ids).associateBy { it.id }
-                
-                batch.forEach { raw ->
-                    val existing = existingMap[raw.id]
-                    if (!isSongUnchanged(raw, existing)) {
-                        results.add(raw)
-                    }
-                }
-            }
-            results
-        }
-
-        rawDataList.clear()
-
-        val totalCount = songsToProcess.size
+        val totalCount = rawSongCount
         Timber.tag(TAG).i(
-            "MediaStore raw=$rawSongCount, songsToProcess=$totalCount, forceProcessAll=$forceProcessAll, resetExistingLocalData=$resetExistingLocalData"
+            "MediaStore raw=$rawSongCount, forceProcessAll=$forceProcessAll, resetExistingLocalData=$resetExistingLocalData"
         )
         if (totalCount == 0) {
             return@traceAsyncSection emptyList()
         }
 
         onProgress(0, totalCount, SyncProgress.SyncPhase.PROCESSING_FILES.ordinal)
-        val processedCount = AtomicInteger(0)
         val concurrencyLimit = 4
         val semaphore = Semaphore(concurrencyLimit)
-
         val songs = mutableListOf<ScannedSong>()
-        for (batch in songsToProcess.chunked(200)) {
+        var scannedCount = 0
+
+        // Read each existing DB row once per batch. The previous incremental path queried the
+        // same IDs once to detect changes and again to preserve local edits/lyrics while saving.
+        for (batch in rawDataList.chunked(200)) {
             val ids = batch.map { it.id }
-            val existingMap = if (resetExistingLocalData) emptyMap() else musicDao.getSongsByIdsListSimple(ids).associateBy { it.id }
+            val existingMap = if (resetExistingLocalData) {
+                emptyMap()
+            } else {
+                musicDao.getSongsByIdsListSimple(ids).associateBy { it.id }
+            }
+            val songsToProcess = if (forceProcessAll) {
+                batch
+            } else {
+                batch.filter { raw -> !isSongUnchanged(raw, existingMap[raw.id]) }
+            }
+
             val batchResults = coroutineScope {
-                batch.map { raw ->
+                songsToProcess.map { raw ->
                     async {
                         semaphore.withPermit {
                             val localSong = existingMap[raw.id]
@@ -1028,18 +1019,25 @@ constructor(
                                 scannedMediaStoreSong.artistValues
                             }
 
-                            val count = processedCount.incrementAndGet()
-                            if (count % progressBatchSize == 0 || count == totalCount) {
-                                onProgress(count, totalCount, SyncProgress.SyncPhase.PROCESSING_FILES.ordinal)
-                            }
                             ScannedSong(entity = song, artistValues = artistValues)
                         }
                     }
                 }.awaitAll()
             }
             songs.addAll(batchResults)
+
+            scannedCount += batch.size
+            if (scannedCount % progressBatchSize < batch.size || scannedCount == totalCount) {
+                onProgress(
+                    scannedCount,
+                    totalCount,
+                    SyncProgress.SyncPhase.PROCESSING_FILES.ordinal
+                )
+            }
         }
 
+        rawDataList.clear()
+        Timber.tag(TAG).i("Processed ${songs.size} changed songs from $rawSongCount MediaStore candidates.")
         songs
     }
 
@@ -1053,22 +1051,17 @@ constructor(
             deepScan: Boolean,
             forceAlbumArtRefresh: Boolean
     ): ScannedSong {
-        val parentDir = java.io.File(raw.filePath).parent ?: ""
+        val parentDir = File(raw.filePath).parent ?: ""
         val contentUriString =
                 ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, raw.id)
                         .toString()
 
-        // Scan-time artwork resolution is intentionally lightweight: it never extracts
-        // embedded art (that can allocate a multi-MB ByteArray per song). The stable lazy
-        // URI is stored and the image-loading path extracts/caches artwork on demand.
-        var albumArtUriString =
-                AlbumArtUtils.getAlbumArtUriForLibraryScan(
-                        applicationContext,
-                        raw.id,
-                        forceAlbumArtRefresh
-                )
-        val audioMetadata =
-                if (deepScan) getAudioMetadata(musicDao, raw.id, raw.filePath, true) else null
+        // Scan-time artwork resolution stays lazy; embedded images are extracted only when shown.
+        val albumArtUriString = AlbumArtUtils.getAlbumArtUriForLibraryScan(
+            applicationContext,
+            raw.id,
+            forceAlbumArtRefresh
+        )
 
         var title = raw.title
         var artist = raw.artist
@@ -1089,37 +1082,50 @@ constructor(
             rawArtist = raw.artist,
             rawAlbum = raw.album
         )
-
-        if (shouldAugmentMetadata) {
-            val file = java.io.File(raw.filePath)
-            if (file.exists()) {
-                try {
-                    AudioMetadataReader.read(file, readArtwork = false)?.let { meta ->
-                        if (!meta.title.isNullOrBlank()) title = meta.title
-                        if (meta.artists.isNotEmpty()) {
-                            artist = meta.artists.first()
-                            // Embedded fields are the authoritative physical ARTIST values here.
-                            // Adding MediaStore's flattened display value can create a spurious
-                            // extra artist when the platform joined repeated tags itself.
-                            artistValues = normalizeArtistMetadataValues(meta.artists)
-                        } else if (!meta.artist.isNullOrBlank()) {
-                            artist = meta.artist
-                            artistValues = normalizeArtistMetadataValues(listOf(meta.artist))
-                        }
-                        if (!meta.album.isNullOrBlank()) album = meta.album
-                        albumArtist = resolveAlbumArtist(
-                            rawAlbumArtist = albumArtist,
-                            metadataAlbumArtist = meta.albumArtist
-                        )
-                        if (!meta.genre.isNullOrBlank()) genre = meta.genre
-                        if (meta.trackNumber != null) trackNumber = meta.trackNumber
-                        if (meta.discNumber != null) discNumber = meta.discNumber
-                        if (meta.year != null) year = meta.year
-                    }
-                } catch (e: Exception) {
-                    Timber.tag(TAG).w(e, "Failed to read metadata via TagLib for ${raw.filePath}")
-                }
+        val file = File(raw.filePath)
+        val embeddedMetadata = if (shouldAugmentMetadata && file.exists()) {
+            try {
+                AudioMetadataReader.read(file, readArtwork = false)
+            } catch (e: Exception) {
+                Timber.tag(TAG).w(e, "Failed to read metadata via TagLib for ${raw.filePath}")
+                null
             }
+        } else {
+            null
+        }
+
+        // TagLib already reads bitrate/sample rate while parsing embedded tags. Only open
+        // MediaMetadataRetriever/MediaExtractor as a fallback when technical fields are missing.
+        val technicalMetadata = if (
+            deepScan &&
+            (embeddedMetadata?.bitrate == null ||
+                embeddedMetadata.sampleRate == null ||
+                raw.mimeType.isNullOrBlank())
+        ) {
+            getAudioMetadata(musicDao, raw.id, raw.filePath, true)
+        } else {
+            null
+        }
+
+        embeddedMetadata?.let { meta ->
+            if (!meta.title.isNullOrBlank()) title = meta.title
+            if (meta.artists.isNotEmpty()) {
+                artist = meta.artists.first()
+                // Embedded fields are authoritative; MediaStore may flatten repeated ARTIST tags.
+                artistValues = normalizeArtistMetadataValues(meta.artists)
+            } else if (!meta.artist.isNullOrBlank()) {
+                artist = meta.artist
+                artistValues = normalizeArtistMetadataValues(listOf(meta.artist))
+            }
+            if (!meta.album.isNullOrBlank()) album = meta.album
+            albumArtist = resolveAlbumArtist(
+                rawAlbumArtist = albumArtist,
+                metadataAlbumArtist = meta.albumArtist
+            )
+            if (!meta.genre.isNullOrBlank()) genre = meta.genre
+            if (meta.trackNumber != null) trackNumber = meta.trackNumber
+            if (meta.discNumber != null) discNumber = meta.discNumber
+            if (meta.year != null) year = meta.year
         }
 
         return ScannedSong(
@@ -1145,9 +1151,9 @@ constructor(
                             if (seconds > 0) TimeUnit.SECONDS.toMillis(seconds)
                             else System.currentTimeMillis()
                         },
-                mimeType = audioMetadata?.mimeType ?: raw.mimeType,
-                sampleRate = audioMetadata?.sampleRate,
-                bitrate = audioMetadata?.bitrate,
+                mimeType = technicalMetadata?.mimeType ?: raw.mimeType,
+                sampleRate = if (deepScan) embeddedMetadata?.sampleRate ?: technicalMetadata?.sampleRate else null,
+                bitrate = if (deepScan) embeddedMetadata?.bitrate ?: technicalMetadata?.bitrate else null,
                 sourceType = SourceType.LOCAL,
                 mediaStoreDateAdded = raw.dateAdded,
                 mediaStoreDateModified = raw.dateModified
