@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - flacman-0.4-library-performance
+      - flacman-0.4-ui-trim
     paths-ignore:
       - "**.md"
       - "docs/**"
