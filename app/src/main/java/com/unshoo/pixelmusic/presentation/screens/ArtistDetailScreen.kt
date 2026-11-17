@@ -515,24 +515,7 @@ fun ArtistDetailScreen(
                     }
                     showSongInfoBottomSheet = false
                 },
-                onEditSong = { newTitle, newArtist, newAlbum, newAlbumArtist, newComposer, newGenre, newLyrics, newTrackNumber, newDiscNumber, replayGainTrackGainDb, replayGainAlbumGainDb, coverArtUpdate, customMetadataChanges ->
-                    playerViewModel.editSongMetadata(
-                        currentSong,
-                        newTitle,
-                        newArtist,
-                        newAlbum,
-                        newAlbumArtist,
-                        newComposer,
-                        newGenre,
-                        newLyrics,
-                        newTrackNumber,
-                        newDiscNumber,
-                        replayGainTrackGainDb,
-                        replayGainAlbumGainDb,
-                        coverArtUpdate,
-                        customMetadataChanges
-                    )
-                },
+
                 removeFromListTrigger = removeFromListTrigger
             )
             if (showPlaylistBottomSheet) {
