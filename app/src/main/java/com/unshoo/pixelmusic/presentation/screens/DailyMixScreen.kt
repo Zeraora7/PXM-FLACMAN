@@ -177,25 +177,7 @@ fun DailyMixScreen(
                 }
                 showSongInfoSheet = false
             },
-            onEditSong = { newTitle, newArtist, newAlbum, newAlbumArtist, newComposer, newGenre, newLyrics, newTrackNumber, newDiscNumber, replayGainTrackGainDb, replayGainAlbumGainDb, coverArtUpdate, customMetadataChanges ->
-                playerViewModel.editSongMetadata(
-                    song,
-                    newTitle,
-                    newArtist,
-                    newAlbum,
-                    newAlbumArtist,
-                    newComposer,
-                    newGenre,
-                    newLyrics,
-                    newTrackNumber,
-                    newDiscNumber,
-                    replayGainTrackGainDb,
-                    replayGainAlbumGainDb,
-                    coverArtUpdate,
-                    customMetadataChanges
-                )
-            },
-            removeFromListTrigger = removeFromListTrigger
+                        removeFromListTrigger = removeFromListTrigger
         )
 
         if (showPlaylistBottomSheet) {
