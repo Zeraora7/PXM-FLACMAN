@@ -195,6 +195,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.capturable) {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.profileinstaller)
     "baselineProfile"(project(":baselineprofile"))
